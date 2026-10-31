@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Webitoo Teacher System - attendance by barcode, automatic WhatsApp to parents, student portal. Prices and demo.">
+<title>Webitoo Teacher System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=Readex+Pro:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column; the hero pairs a student ID card with the WhatsApp message the parent receives. Bilingual (AR/EN), viewer picks. */
+:root {
+  --paper: #f5f7fc;  --sheet: #ffffff;  --ink: #0e1a3a;  --muted: #56648a;  --line: #dde4f2;
+  --blue: #1f4fe0;   --blue-soft: #e7edff;  --marker: #ffd23f;  --wa: #1a9e4f;  --wa-bubble: #dcf8c6;  --wa-ink: #10301c;
+  --display: 'Alexandria', 'Readex Pro', 'Segoe UI', Tahoma, sans-serif;
+  --body: 'Readex Pro', 'Segoe UI', Tahoma, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0a1022; --sheet: #111a33; --ink: #e9eefc; --muted: #9aa8cc; --line: #233056;
+  --blue: #7c9bff; --blue-soft: #1a2750; --marker: #ffd23f; --wa: #3ccf7a; --wa-bubble: #1f4733; --wa-ink: #e3f7ea; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0a1022; --sheet: #111a33; --ink: #e9eefc; --muted: #9aa8cc; --line: #233056;
+  --blue: #7c9bff; --blue-soft: #1a2750; --marker: #ffd23f; --wa: #3ccf7a; --wa-bubble: #1f4733; --wa-ink: #e3f7ea; color-scheme: dark }
+
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.75; }
+.page { max-width: 1060px; margin: 0 auto; padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.page[lang="en"] { line-height: 1.6; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.3; text-wrap: balance; margin: 0; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--blue); }
+.mark { background: linear-gradient(transparent 58%, var(--marker) 58%); padding: 0 .1em; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+
+/* top bar + language switch */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
+.brand { font-family: var(--display); font-weight: 700; font-size: 21px; }
+.brand span { color: var(--blue); }
+.top-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.lang { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; background: var(--sheet); }
+.lang button { border: 0; background: transparent; color: var(--muted); font-family: var(--body); font-weight: 600; font-size: 14px; padding: 4px 14px; border-radius: 999px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+.cta-sm { text-decoration: none; font-weight: 600; font-size: 14px; border: 1.5px solid var(--blue); border-radius: 999px; padding: 6px 16px; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; margin-bottom: 72px; }
+.hero > * { min-width: 0; }
+.eyebrow { font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 10px; letter-spacing: .3px; }
+.hero h1 { font-size: clamp(30px, 5vw, 48px); margin-bottom: 18px; }
+.hero .lead { font-size: 18px; color: var(--muted); max-width: 34em; margin-bottom: 26px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--body); font-weight: 600; font-size: 16px; border-radius: 12px; padding: 12px 22px; text-decoration: none; border: 0; cursor: pointer; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+
+.proof { display: grid; gap: 16px; justify-items: center; }
+.card-id { width: 100%; max-width: 330px; box-sizing: border-box; background: var(--sheet); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; box-shadow: 0 18px 40px -22px rgba(15, 27, 61, .45); transform: rotate(-2deg); }
+.card-id .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.card-id .name { font-weight: 600; font-size: 17px; }
+.card-id .meta { font-size: 13px; color: var(--muted); }
+.card-id .id { font-family: var(--mono); font-weight: 600; color: var(--blue); font-size: 15px; }
+.barcode { height: 54px; margin-top: 12px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px, var(--ink) 8px 11px, transparent 11px 12px, var(--ink) 12px 13px, transparent 13px 16px); }
+.scan-note { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+.wa { width: 100%; max-width: 330px; box-sizing: border-box; background: var(--wa-bubble); color: var(--wa-ink); border-radius: 14px 14px 4px 14px; padding: 12px 14px 8px; font-size: 14px; line-height: 1.7; box-shadow: 0 10px 26px -18px rgba(0, 0, 0, .5); transform: rotate(1.5deg); }
+.wa .who { font-size: 12px; font-weight: 600; color: var(--wa); margin-bottom: 4px; }
+.wa .time { font-size: 11px; opacity: .7; font-family: var(--mono); text-align: end; }
+
+section { margin-bottom: 72px; }
+.sec-head { margin-bottom: 26px; max-width: 40em; }
+.sec-head h2 { font-size: clamp(25px, 3.4vw, 32px); margin-bottom: 8px; }
+.sec-head p { color: var(--muted); }
+
+/* a session day is a real sequence, so it is numbered */
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.flow li { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 18px; counter-increment: step; min-width: 0; }
+.flow li::before { content: counter(step); display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-family: var(--mono); font-weight: 600; margin-bottom: 10px; }
+.flow h3 { font-size: 17px; margin-bottom: 6px; }
+.flow p { font-size: 14px; color: var(--muted); }
+
+.features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 40px; background: var(--sheet); border: 1px solid var(--line); border-radius: 16px; padding: 8px 26px; }
+.feat { display: grid; grid-template-columns: 26px 1fr; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.feat:nth-last-child(-n+2) { border-bottom: 0; }
+.tick { width: 22px; height: 22px; border-radius: 6px; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 13px; margin-top: 4px; }
+.feat h3 { font-family: var(--body); font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+.feat p { font-size: 14px; color: var(--muted); }
+
+/* pricing */
+.plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 18px; }
+.plan { background: var(--sheet); border: 1.5px solid var(--line); border-radius: 18px; padding: 24px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.plan .tag { justify-self: start; font-size: 12px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border-radius: 999px; padding: 2px 12px; }
+.plan h3 { font-size: 22px; }
+.price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.price b { font-family: var(--mono); font-size: 46px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.price span { font-size: 15px; color: var(--muted); }
+.terms { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.terms li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; }
+.terms li::before { content: "●"; color: var(--blue); font-size: 10px; margin-top: 6px; }
+.terms b { color: var(--ink); }
+.plan .fit { font-size: 14px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; }
+
+.calc { background: var(--sheet); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px; display: grid; gap: 16px; }
+.calc h3 { font-size: 19px; }
+.calc .inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.calc label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; min-width: 0; }
+.calc input { font-family: var(--mono); font-size: 18px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); width: 100%; box-sizing: border-box; }
+.calc .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+.calc .out { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.calc .res { border-radius: 12px; padding: 12px 14px; background: var(--paper); border: 1.5px solid var(--line); display: grid; gap: 2px; }
+.calc .res.win { border-color: var(--wa); }
+.calc .res .k { font-size: 13px; color: var(--muted); }
+.calc .res .v { font-family: var(--mono); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.calc .res .sub { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.calc .verdict { font-size: 14px; font-weight: 600; color: var(--wa); min-height: 1.6em; }
+
+.faq { display: grid; gap: 10px; }
+.faq details { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.faq summary { font-weight: 600; cursor: pointer; }
+.faq details p { margin-top: 8px; color: var(--muted); font-size: 15px; }
+
+.contact { background: var(--blue); color: #fff; border-radius: 22px; padding: 32px 28px; display: grid; gap: 14px; }
+.contact h2 { font-size: clamp(24px, 3.4vw, 30px); }
+.contact p { opacity: .92; max-width: 38em; }
+.contact .links { display: flex; gap: 12px; flex-wrap: wrap; }
+.contact .links a, .contact .links button { background: #fff; color: #10215e; border: 0; border-radius: 12px; padding: 11px 18px; font-family: var(--body); font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer; }
+.contact .copied { font-size: 13px; min-height: 1.4em; opacity: .9; }
+footer { margin-top: 28px; font-size: 13px; color: var(--muted); text-align: center; }
+
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 34px; } .flow { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) {
+  .features, .plans, .calc .inputs, .calc .out { grid-template-columns: 1fr; }
+  .feat:nth-last-child(2) { border-bottom: 1px solid var(--line); }
+  .flow { grid-template-columns: 1fr; }
+  .card-id, .wa { transform: none; }
+}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+<div class="page" id="page" dir="rtl" lang="ar">
+  <header class="top">
+    <div class="brand">Webitoo <span>·</span> <span data-t="brand"></span></div>
+    <div class="top-actions">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" id="lang-ar" data-lang="ar">العربية</button>
+        <button type="button" id="lang-en" data-lang="en">English</button>
+      </div>
+      <a class="cta-sm" href="#contact" data-t="ctaDemo"></a>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1 data-t="h1" data-html></h1>
+      <p class="lead" data-t="lead"></p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#contact" data-t="ctaDemo"></a>
+        <a class="btn btn-ghost" href="#pricing" data-t="ctaPrices"></a>
+      </div>
+    </div>
+    <div class="proof">
+      <div class="card-id">
+        <div class="row"><span class="name" data-t="sName"></span><span class="id">30142</span></div>
+        <div class="meta" data-t="sMeta"></div>
+        <div class="barcode" role="img" aria-label="barcode"></div>
+        <div class="scan-note" data-t="scanNote"></div>
+      </div>
+      <div class="wa">
+        <div class="who" data-t="waWho"></div>
+        <div data-t="waMsg" data-html></div>
+        <div class="time" data-t="waTime"></div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2 data-t="flowH"></h2><p data-t="flowP"></p></div>
+    <ol class="flow">
+      <li><h3 data-t="f1h"></h3><p data-t="f1p"></p></li>
+      <li><h3 data-t="f2h"></h3><p data-t="f2p"></p></li>
+      <li><h3 data-t="f3h"></h3><p data-t="f3p"></p></li>
+      <li><h3 data-t="f4h"></h3><p data-t="f4p"></p></li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 data-t="featH"></h2><p data-t="featP"></p></div>
+    <div class="features" id="features"></div>
+  </section>
+
+  <section id="pricing">
+    <div class="sec-head"><h2 data-t="priceH"></h2><p data-t="priceP"></p></div>
+    <div class="plans">
+      <div class="plan">
+        <span class="tag" data-t="pMsgTag"></span>
+        <h3 data-t="pMsgName"></h3>
+        <div class="price"><b>3</b><span data-t="pMsgUnit"></span></div>
+        <ul class="terms"><li data-t="pMsgT1" data-html></li><li data-t="pMsgT2" data-html></li><li data-t="pMsgT3" data-html></li></ul>
+        <p class="fit" data-t="pMsgFit"></p>
+      </div>
+      <div class="plan">
+        <span class="tag" data-t="pStdTag"></span>
+        <h3 data-t="pStdName"></h3>
+        <div class="price"><b>15</b><span data-t="pStdUnit"></span></div>
+        <ul class="terms"><li data-t="pStdT1" data-html></li><li data-t="pStdT2" data-html></li><li data-t="pStdT3" data-html></li></ul>
+        <p class="fit" data-t="pStdFit"></p>
+      </div>
+    </div>
+
+    <div class="calc">
+      <h3 data-t="calcH"></h3>
+      <div class="inputs">
+        <label for="c-students"><span data-t="calcStudents"></span>
+          <input id="c-students" type="number" min="0" step="10" value="300" inputmode="numeric">
+        </label>
+        <label for="c-sessions"><span data-t="calcSessions"></span>
+          <input id="c-sessions" type="number" min="0" step="1" value="4" inputmode="numeric">
+          <span class="hint" data-t="calcHint"></span>
+        </label>
+      </div>
+      <div class="out">
+        <div class="res" id="r-msg"><div class="k" data-t="pMsgName"></div><div class="v" id="v-msg">—</div><div class="sub" id="s-msg"></div></div>
+        <div class="res" id="r-std"><div class="k" data-t="pStdName"></div><div class="v" id="v-std">—</div><div class="sub" id="s-std"></div></div>
+      </div>
+      <p class="verdict" id="verdict" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2 data-t="faqH"></h2></div>
+    <div class="faq" id="faq"></div>
+  </section>
+
+  <section id="contact" class="contact">
+    <h2 data-t="contactH"></h2>
+    <p data-t="contactP"></p>
+    <div class="links">
+      <a href="https://www.instagram.com/_webitoo_" target="_blank" rel="noopener"><span data-t="ig"></span> @_webitoo_</a>
+      <a href="https://webitoo.vercel.app" target="_blank" rel="noopener" data-t="site"></a>
+      <button type="button" id="copy-ig" data-t="copy"></button>
+    </div>
+    <p class="copied" id="copied" aria-live="polite"></p>
+  </section>
+
+  <footer data-t="footer"></footer>
+</div>
+
+<script>
+(function () {
+  var T = {
+    ar: {
+      brand: 'سيستم المدرس', ctaDemo: 'اطلب نسخة تجربة', ctaPrices: 'شوف الأسعار',
+      eyebrow: 'لمدرسين الدروس والسناتر',
+      h1: 'الحضور في ثانية، <span class="mark">وولي الأمر يعرف</span> قبل ما الحصة تخلص',
+      lead: 'سيستم واحد بيسجل حضور طلابك بالباركود، ويبعت لولي الأمر رسالة واتساب أوتوماتيك بالحضور والدرجة، وكل طالب ليه لينك بيشوف فيه درجاته من أول حصة.',
+      sName: 'أحمد محمد علي حسن', sMeta: 'تالتة ثانوي · سنتر الهرم', scanNote: 'مثال · الأسيستنت يمسحه بالكاميرا أو الجهاز',
+      waWho: 'رسالة لولي الأمر', waMsg: 'أهلاً بحضرتك يا فندم، نعلمكم إن الطالب أحمد حضر حصة <b>الباب الأول · حصة 8</b> في سنتر الهرم. ودا لينك درجاته من أول حصة لحد النهارده.', waTime: 'مثال · 6:42 م ✓✓',
+      flowH: 'يوم الحصة بيمشي كده', flowP: 'من غير كشوف ورق، ومن غير ما حد يتصل بأولياء الأمور واحد واحد.',
+      f1h: 'الطالب يدخل', f1p: 'الأسيستنت يمسح الكارنيه من الكمبيوتر أو من موبايله، حتى لو النت مقطوع.',
+      f2h: 'الواجب والكويز', f2p: 'الواجب يتسجل مع الحضور، ودرجة الكويز تتكتب في ثواني.',
+      f3h: 'ولي الأمر يعرف', f3p: 'رسالة واتساب أوتوماتيك بالحضور والدرجة، والغياب يظهر في قايمة للكول سنتر.',
+      f4h: 'الطالب يتابع', f4p: 'لينك لكل طالب فيه حصصه ودرجاته وجراف مستواه وامتحاناته.',
+      featH: 'كل اللي بتحتاجه في السنتر', featP: 'كل المميزات دي موجودة في الباقتين.',
+      feats: [
+        ['حضور بالباركود', 'كارنيه بباركود لكل طالب، ومسح بالجهاز أو بكاميرا الموبايل.'],
+        ['رسايل واتساب أوتوماتيك', 'حضور، وغياب، ودرجات الكويز، ونتايج الامتحانات الشهرية، لولي الأمر مباشرة.'],
+        ['صفحة لكل طالب', 'حصصه ودرجاته وجراف مستواه والامتحانات وفيديوهات الشرح.'],
+        ['أبلكيشن للأسيستنتس', 'على أي موبايل، بيسجل الحضور من غير نت ويرفعه لوحده لما النت يرجع.'],
+        ['أكتر من سنتر', 'كل سنتر بمواعيده وجروب الواتساب بتاعه، والطالب يحضر كضيف في سنتر تاني.'],
+        ['كول سنتر وغياب', 'قايمة بالغايبين وأرقام أولياء الأمور، وملاحظة لكل مكالمة.'],
+        ['طلاب المراجعة', 'تسجل بيانات طالب جاي مرة واحدة من غير ID، ولو كمّل تديله ID وبياناته تفضل معاه.'],
+        ['سجل مراقبة', 'تعرف مين عمل إيه وإمتى ومن أنهي جهاز، حتى مين داس إرسال رسايل الواتساب.'],
+        ['صلاحيات للأسيستنتس', 'كل أسيستنت يشوف الشاشات اللي ليه بس، والليدرز ليهم صلاحيات أكتر.'],
+        ['تقارير Excel', 'حضور وغياب كل حصة وكل سنتر في ملف جاهز.']
+      ],
+      priceH: 'الأسعار', priceP: 'اختار الطريقة اللي تناسب سنترك، والمميزات واحدة في الاتنين.',
+      pMsgTag: 'بتدفع على قد ما بتبعت', pMsgName: 'باقة الرسالة', pMsgUnit: 'جنيه لكل رسالة واتساب',
+      pMsgT1: 'الدفع <b>كل أسبوع</b>', pMsgT2: 'بتدفع على عدد الرسايل اللي <b>اتبعتت فعلاً</b> في الأسبوع ده', pMsgT3: 'الرسالة اللي <b>متوصلتش</b> (رقم مش عليه واتساب) <b>مش بتتحسب</b>',
+      pMsgFit: 'مناسبة لو بتبعت رسايل في حصص معينة بس، أو عدد طلابك بيتغير كتير.',
+      pStdTag: 'سعر ثابت للطالب', pStdName: 'باقة الطالب', pStdUnit: 'جنيه لكل طالب نشط في الشهر',
+      pStdT1: 'الدفع <b>كل شهر</b>', pStdT2: 'الطالب النشط = حضر <b>حصة واحدة على الأقل</b> في الشهر', pStdT3: 'رسايل واتساب <b>بعدد غير محدود</b>',
+      pStdFit: 'مناسبة لو بتبعت لكل طالب رسالة في كل حصة.',
+      calcH: 'احسب سنترك في الشهر', calcStudents: 'عدد الطلاب اللي بيحضروا في الشهر', calcSessions: 'عدد الحصص في الشهر لكل طالب',
+      calcHint: 'كل حصة = رسالة واحدة لولي الأمر تقريباً',
+      perMonth: 'في الشهر', perWeek: 'تقريباً كل أسبوع', msgs: 'رسالة في الشهر', stds: 'طالب نشط',
+      same: 'الباقتين نفس السعر لسنترك.', cheaper: function (p, x) { return p + ' أوفر لسنترك بـ ' + x + ' في الشهر.'; },
+      cur: 'ج',
+      faqH: 'أسئلة بتتسأل كتير',
+      faq: [
+        ['الحساب في باقة الرسالة بيتم إزاي؟', 'كل أسبوع بنبعتلك عدد الرسايل اللي اتبعتت فعلاً × 3 جنيه، وتدفع المبلغ ده. الرسايل اللي فشلت مش بتتحسب.'],
+        ['داتا الطلاب ملك مين؟', 'ملكك إنت. كل مدرس ليه قاعدة بيانات خاصة بيه لوحده، ومحدش تاني بيشوفها. وإحنا مش بنبيع أو نشارك أي بيانات.'],
+        ['لو النت قطع في السنتر؟', 'الحضور بيتسجل عادي على الكمبيوتر وعلى موبايل الأسيستنت، وكله بيترفع لوحده أول ما النت يرجع.'],
+        ['محتاج أجهزة إيه؟', 'كمبيوتر ويندوز في السنتر، وموبايلات الأسيستنتس (أي موبايل عليه متصفح). وجهاز باركود لو حابب، أو كاميرا الموبايل.'],
+        ['أقدر أجرب قبل ما أشترك؟', 'أيوه، عندنا نسخة تجربة كاملة ببيانات وهمية تقدر تجرب فيها كل حاجة.']
+      ],
+      contactH: 'اطلب نسخة التجربة', contactP: 'ابعتلنا رسالة على إنستجرام، وإحنا نوريك السيستم شغال ونجهزلك نسختك.',
+      ig: 'إنستجرام', site: 'موقع Webitoo', copy: 'انسخ اسم الحساب', copied: 'اتنسخ: ', handle: 'اسم الحساب: ',
+      footer: 'Webitoo · سيستمات ذكية وآمنة للبيزنس'
+    },
+    en: {
+      brand: 'Teacher System', ctaDemo: 'Request a demo', ctaPrices: 'See prices',
+      eyebrow: 'For private tutors and learning centers',
+      h1: 'Attendance in one second, <span class="mark">parents informed</span> before the session ends',
+      lead: 'One system that records attendance by barcode, sends parents an automatic WhatsApp message with attendance and grades, and gives every student a link to follow their grades from day one.',
+      sName: 'Ahmed Mohamed Ali', sMeta: 'Grade 12 · Haram Center', scanNote: 'Example · scanned by phone camera or scanner',
+      waWho: 'Message to the parent', waMsg: 'Hello, we would like to inform you that Ahmed attended <b>Chapter 1 · Session 8</b> at Haram Center. Here is the link to all his grades so far.', waTime: 'Example · 6:42 PM ✓✓',
+      flowH: 'How a session day works', flowP: 'No paper sheets, and nobody has to call parents one by one.',
+      f1h: 'Student arrives', f1p: 'The assistant scans the ID card from the PC or a phone, even without internet.',
+      f2h: 'Homework & quiz', f2p: 'Homework is recorded with attendance; quiz grades take seconds.',
+      f3h: 'Parent is informed', f3p: 'An automatic WhatsApp with attendance and grade; absences go to a call list.',
+      f4h: 'Student follows', f4p: 'Each student has a link with sessions, grades, a progress chart and exams.',
+      featH: 'Everything a center needs', featP: 'Every feature is included in both plans.',
+      feats: [
+        ['Barcode attendance', 'A barcode ID card for every student, scanned with a scanner or a phone camera.'],
+        ['Automatic WhatsApp', 'Attendance, absence, quiz grades and monthly exam results, straight to the parent.'],
+        ['A page for every student', 'Sessions, grades, a progress chart, exams and lesson videos.'],
+        ['Assistant mobile app', 'Works on any phone, records attendance offline and uploads it when the internet is back.'],
+        ['Multiple centers', 'Each center with its own schedule and WhatsApp group; students can attend another center as guests.'],
+        ['Call center & absences', 'A list of absent students with parent numbers, and a note for every call.'],
+        ['Revision students', 'Save a one-time student without an ID; if they continue, give them an ID and keep their data.'],
+        ['Activity log', 'See who did what, when and from which device, including who pressed Send on WhatsApp.'],
+        ['Assistant permissions', 'Each assistant sees only their screens; leaders get more.'],
+        ['Excel reports', 'Attendance and absence for every session and center, ready to export.']
+      ],
+      priceH: 'Prices', priceP: 'Pick the plan that fits your center. Both include every feature.',
+      pMsgTag: 'Pay for what you send', pMsgName: 'Per-message plan', pMsgUnit: 'EGP per WhatsApp message',
+      pMsgT1: 'Paid <b>every week</b>', pMsgT2: 'You pay only for messages <b>actually sent</b> that week', pMsgT3: 'Messages that <b>fail</b> (number not on WhatsApp) are <b>not charged</b>',
+      pMsgFit: 'Best if you message only on some sessions, or your student count changes a lot.',
+      pStdTag: 'Fixed price per student', pStdName: 'Per-student plan', pStdUnit: 'EGP per active student per month',
+      pStdT1: 'Paid <b>every month</b>', pStdT2: 'Active student = attended <b>at least one session</b> that month', pStdT3: '<b>Unlimited</b> WhatsApp messages',
+      pStdFit: 'Best if every student gets a message after every session.',
+      calcH: 'Estimate your monthly cost', calcStudents: 'Students attending per month', calcSessions: 'Sessions per student per month',
+      calcHint: 'Each session ≈ one message to the parent',
+      perMonth: 'per month', perWeek: 'about every week', msgs: 'messages per month', stds: 'active students',
+      same: 'Both plans cost the same for your center.', cheaper: function (p, x) { return 'The ' + p + ' saves you ' + x + ' a month.'; },
+      cur: 'EGP',
+      faqH: 'Frequently asked questions',
+      faq: [
+        ['How is the per-message plan billed?', 'Every week we send you the number of messages actually sent × 3 EGP, and you pay that amount. Failed messages are not charged.'],
+        ['Who owns the student data?', 'You do. Every teacher has their own private database that nobody else can see. We never sell or share any data.'],
+        ['What if the internet goes down?', 'Attendance keeps working on the PC and on the assistants\' phones, and uploads by itself when the internet is back.'],
+        ['What equipment do I need?', 'A Windows PC at the center and the assistants\' phones (any phone with a browser). A barcode scanner is optional; a phone camera works too.'],
+        ['Can I try it first?', 'Yes. We have a full demo with sample data where you can try everything.']
+      ],
+      contactH: 'Request your demo', contactP: 'Send us a message on Instagram and we will show you the system and set up your own copy.',
+      ig: 'Instagram', site: 'Webitoo website', copy: 'Copy handle', copied: 'Copied: ', handle: 'Handle: ',
+      footer: 'Webitoo · smart, secure systems for business'
+    }
+  };
+  var lang = 'ar';
+  var page = document.getElementById('page');
+  var s = document.getElementById('c-students'), n = document.getElementById('c-sessions');
+  var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var money = function (x) { return Math.round(x).toLocaleString('en-US') + ' ' + T[lang].cur; };
+
+  function calc() {
+    var t = T[lang], st = Math.max(0, +s.value || 0), se = Math.max(0, +n.value || 0);
+    var msgs = st * se, byMsg = msgs * 3, byStd = st * 15;
+    document.getElementById('v-msg').textContent = money(byMsg);
+    document.getElementById('v-std').textContent = money(byStd);
+    document.getElementById('s-msg').textContent = msgs.toLocaleString('en-US') + ' ' + t.msgs + ' · ' + money(byMsg * 12 / 52) + ' ' + t.perWeek;
+    document.getElementById('s-std').textContent = st.toLocaleString('en-US') + ' ' + t.stds + ' · ' + t.perMonth;
+    document.getElementById('r-msg').classList.toggle('win', byMsg < byStd);
+    document.getElementById('r-std').classList.toggle('win', byStd < byMsg);
+    var v = document.getElementById('verdict');
+    if (!st || !se) v.textContent = '';
+    else if (byMsg === byStd) v.textContent = t.same;
+    else v.textContent = t.cheaper(byMsg < byStd ? t.pMsgName : t.pStdName, money(Math.abs(byMsg - byStd)));
+  }
+
+  function setLang(l) {
+    lang = T[l] ? l : 'ar';
+    var t = T[lang];
+    page.setAttribute('lang', lang);
+    page.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.title = lang === 'ar' ? 'سيستم المدرس من Webitoo' : 'Webitoo Teacher System';
+    document.querySelectorAll('[data-t]').forEach(function (el) {
+      var v = t[el.getAttribute('data-t')];
+      if (typeof v !== 'string') return;
+      if (el.hasAttribute('data-html')) el.innerHTML = v; else el.textContent = v;
+    });
+    document.getElementById('features').innerHTML = t.feats.map(function (f) {
+      return '<div class="feat"><span class="tick">✓</span><div><h3>' + esc(f[0]) + '</h3><p>' + esc(f[1]) + '</p></div></div>';
+    }).join('');
+    document.getElementById('faq').innerHTML = t.faq.map(function (q) {
+      return '<details><summary>' + esc(q[0]) + '</summary><p>' + esc(q[1]) + '</p></details>';
+    }).join('');
+    document.getElementById('lang-ar').setAttribute('aria-pressed', lang === 'ar');
+    document.getElementById('lang-en').setAttribute('aria-pressed', lang === 'en');
+    document.getElementById('copied').textContent = '';
+    calc();
+    try { localStorage.setItem('webitoo-lang', lang); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); }); });
+  s.addEventListener('input', calc); n.addEventListener('input', calc);
+  document.getElementById('copy-ig').addEventListener('click', function () {
+    var out = document.getElementById('copied'), handle = '@_webitoo_', t = T[lang];
+    function done(ok) { out.textContent = (ok ? t.copied : t.handle) + handle; }
+    try { navigator.clipboard.writeText(handle).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+  });
+
+  // language: #en / ?lang=en in the link, then the visitor's last choice, then the browser language
+  var start = 'ar';
+  try {
+    var q = (location.search.match(/[?&]lang=(ar|en)/) || [])[1], h = (location.hash || '').replace('#', '');
+    var saved = null; try { saved = localStorage.getItem('webitoo-lang'); } catch (e) {}
+    start = q || (h === 'en' || h === 'ar' ? h : null) || saved || ((navigator.language || '').toLowerCase().indexOf('ar') === 0 ? 'ar' : 'ar');
+  } catch (e) {}
+  setLang(start);
+})();
+</script>
+
+</body>
+</html>
