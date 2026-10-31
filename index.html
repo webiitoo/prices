@@ -476,5 +476,31 @@ footer { margin-top: 28px; font-size: 13px; color: var(--muted); text-align: cen
 })();
 </script>
 
+<script>
+// Visit counter (Webitoo): +1 visit every time the page opens, +1 device the first time a phone/PC opens it.
+(function () {
+  if (/[?&]nocount\b/.test(location.search)) { try { localStorage.setItem('webitoo-nocount', '1'); } catch (e) {} }
+  try { if (localStorage.getItem('webitoo-nocount') === '1') return; } catch (e) {}   // your own devices: open once with ?nocount
+  var d = new Date(), day = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  var inc = { '.sv': { 'increment': 1 } }, base = 'prices/visits/', upd = {};
+  upd[base + 'total_views'] = inc;
+  upd[base + 'daily/' + day + '/views'] = inc;
+  var id = null;
+  try { id = localStorage.getItem('webitoo-device'); } catch (e) {}
+  if (!id) {
+    id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    var saved = false;
+    try { localStorage.setItem('webitoo-device', id); saved = true; } catch (e) {}
+    if (saved) {
+      upd[base + 'total_devices'] = inc;
+      upd[base + 'daily/' + day + '/devices'] = inc;
+      upd[base + 'devices/' + id] = { first: { '.sv': 'timestamp' }, mobile: /Mobi|Android|iPhone/i.test(navigator.userAgent),
+                                       lang: (document.getElementById('page') || {}).lang || 'ar' };
+    }
+  }
+  try { fetch('https://webitoo-control-default-rtdb.europe-west1.firebasedatabase.app/.json', { method: 'PATCH', body: JSON.stringify(upd), keepalive: true }).catch(function () {}); } catch (e) {}
+})();
+</script>
+
 </body>
 </html>

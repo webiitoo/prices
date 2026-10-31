@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#070b1a">
+<title>Prices Page Visits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@600;700&family=Readex+Pro:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root { --paper: #070b1a; --sheet: #0f1630; --ink: #eef2ff; --muted: #9aa6cc; --line: #222d55;
+  --cyan: #3cc8f8; --blue: #4a7dff; --violet: #9a5cf0; --brand: linear-gradient(100deg, var(--cyan), var(--blue) 50%, var(--violet)); color-scheme: dark; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Readex Pro', 'Segoe UI', Tahoma, sans-serif; }
+.page { max-width: 900px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+h1 { font-family: 'Alexandria', sans-serif; font-size: 24px; margin: 0; }
+h1 span { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.muted { color: var(--muted); font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+.kpi .l { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.kpi .v { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.panel { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.panel h2 { font-size: 15px; margin: 0 0 12px; }
+.legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
+.chart { display: flex; align-items: flex-end; gap: 3px; height: 170px; direction: ltr; }
+.col { flex: 1; display: grid; grid-template-rows: 1fr auto; height: 100%; min-width: 0; }
+.bars { display: flex; align-items: flex-end; gap: 1px; }
+.bars b { flex: 1; border-radius: 3px 3px 0 0; min-height: 1px; }
+.bars b.v { background: rgba(74, 125, 255, .35); } .bars b.d { background: var(--cyan); }
+.col span { font-size: 9px; color: var(--muted); text-align: center; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+#err { color: #f87171; font-size: 14px; }
+@media (max-width: 600px) { .kpis { grid-template-columns: repeat(2, 1fr); } .kpi .v { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div><h1><span>Webitoo</span> · زوار صفحة الأسعار</h1>
+  <p class="muted">الجهاز = موبايل أو كمبيوتر فتح الصفحة (بيتحسب مرة واحدة). الزيارة = كل مرة الصفحة اتفتحت.</p></div>
+  <div class="kpis">
+    <div class="kpi"><div class="l">الأجهزة (الإجمالي)</div><div class="v" id="k-dev">—</div></div>
+    <div class="kpi"><div class="l">الزيارات (الإجمالي)</div><div class="v" id="k-views">—</div></div>
+    <div class="kpi"><div class="l">أجهزة جديدة النهارده</div><div class="v" id="k-today">—</div></div>
+    <div class="kpi"><div class="l">أجهزة آخر 7 أيام</div><div class="v" id="k-week">—</div></div>
+  </div>
+  <div class="panel">
+    <h2>آخر 30 يوم</h2>
+    <div class="legend"><span><i style="background:var(--cyan)"></i>أجهزة جديدة</span><span><i style="background:rgba(74,125,255,.35)"></i>زيارات</span></div>
+    <div class="chart" id="chart"></div>
+  </div>
+  <p id="err"></p>
+  <p class="muted">بيتحدث كل 30 ثانية · <a href="./" style="color:var(--cyan)">صفحة الأسعار</a></p>
+</div>
+<script>
+(function () {
+  var DB = 'https://webitoo-control-default-rtdb.europe-west1.firebasedatabase.app/prices/visits/';
+  var key = function (d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  var fmt = function (n) { return Number(n || 0).toLocaleString('en-US'); };
+  function get(p) { return fetch(DB + p + '.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
+  function load() {
+    Promise.all([get('total_devices'), get('total_views'), get('daily')]).then(function (v) {
+      var daily = v[2] || {}, today = new Date();
+      document.getElementById('k-dev').textContent = fmt(v[0]);
+      document.getElementById('k-views').textContent = fmt(v[1]);
+      document.getElementById('k-today').textContent = fmt((daily[key(today)] || {}).devices);
+      var week = 0, d = new Date(); for (var i = 0; i < 7; i++) { week += (daily[key(d)] || {}).devices || 0; d.setDate(d.getDate() - 1); }
+      document.getElementById('k-week').textContent = fmt(week);
+      var days = [], s = new Date(); s.setDate(s.getDate() - 29);
+      for (var j = 0; j < 30; j++) { days.push(key(s)); s.setDate(s.getDate() + 1); }
+      var max = Math.max(1, Math.max.apply(null, days.map(function (k) { return (daily[k] || {}).views || 0; })));
+      document.getElementById('chart').innerHTML = days.map(function (k) {
+        var x = daily[k] || {};
+        return '<div class="col" title="' + k + ': ' + (x.devices || 0) + ' devices, ' + (x.views || 0) + ' visits"><div class="bars">' +
+          '<b class="d" style="height:' + ((x.devices || 0) / max * 100) + '%"></b><b class="v" style="height:' + ((x.views || 0) / max * 100) + '%"></b></div><span>' + k.slice(8) + '</span></div>';
+      }).join('');
+      document.getElementById('err').textContent = '';
+    }).catch(function (e) { document.getElementById('err').textContent = 'مقدرتش أجيب الأرقام (' + e.message + ')'; });
+  }
+  load(); setInterval(load, 30000);
+})();
+</script>
+</body>
+</html>
